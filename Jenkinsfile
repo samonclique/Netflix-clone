@@ -70,6 +70,18 @@ pipeline{
                 sh 'docker run -d --name netflix -p 8081:80 samonclique/netflix:latest'
             }
         }
+        stage('Deploy to kubernetes'){
+            steps{
+                script{
+                    dir('Kubernetes') {
+                        withKubeConfig(caCertificate: '', clusterName: 'EKS_CLOUD', contextName: '', credentialsId: 'Kubernetes-token', namespace: 'netflix', restrictKubeConfigAccess: false, serverUrl: 'https://DA7821A7A8CA615C9EA99276815A9D99.gr7.us-east-2.eks.amazonaws.com') {
+                                sh 'kubectl apply -f deployment.yml'
+                                sh 'kubectl apply -f service.yml'
+                        }
+                    }
+                }
+            }
+        }
     }
     post {
      always {

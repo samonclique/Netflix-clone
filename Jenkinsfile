@@ -38,15 +38,26 @@ pipeline{
                 sh "npm install"
             }
         }
-        stage('OWASP FS SCAN') {
-            steps {
-                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'dp-check'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
+        
         stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
+            }
+        }
+        stage("Docker Build & Push"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker-cred-id', toolName: 'docker'){
+                       sh "docker build --build-arg TMDB_V3_API_KEY=cf96061dc915a324903b8c40f31a6508 -t netflix ."
+                       sh "docker tag netflix samonclique/netflix:latest "
+                       sh "docker push samonclique/netflix:latest "
+                    }
+                }
+            }
+        }
+        stage("TRIVY"){
+            steps{
+                sh "trivy image sevenajay/netflix:latest > trivyimage.txt"
             }
         }
     }

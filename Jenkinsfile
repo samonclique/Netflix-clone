@@ -38,7 +38,12 @@ pipeline{
                 sh "npm install"
             }
         }
-        
+        stage('OWASP FS SCAN') {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'dp-check'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
         stage('TRIVY FS SCAN') {
             steps {
                 sh "trivy fs . > trivyfs.txt"
@@ -55,9 +60,14 @@ pipeline{
                 }
             }
         }
-        stage("TRIVY"){
+        stage("TRIVY IMAGE SCAN"){
             steps{
-                sh "trivy image sevenajay/netflix:latest > trivyimage.txt"
+                sh "trivy image samonclique/netflix:latest > trivyimage.txt"
+            }
+        }
+        stage('Deploy to container'){
+            steps{
+                sh 'docker run -d --name netflix -p 8081:80 samonclique/netflix:latest'
             }
         }
     }
@@ -68,7 +78,7 @@ pipeline{
             body: "Project: ${env.JOB_NAME}<br/>" +
                 "Build Number: ${env.BUILD_NUMBER}<br/>" +
                 "URL: ${env.BUILD_URL}<br/>",
-            to: 'postbox.aj99@gmail.com',
+            to: 'samonclique@hotmail.com',
             attachmentsPattern: 'trivyfs.txt,trivyimage.txt'
         }
     }
